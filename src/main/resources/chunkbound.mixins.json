@@ -3,12 +3,6 @@
   "minVersion": "0.8",
   "package": "com.jxmann.chunkbound.mixin",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "chunkbound.refmap.json",
-  "mixins": [
-    "ChunkGeneratorMixin",
-    "NoiseBasedChunkGeneratorMixin",
-    "StructureManagerAccessor"
-  ],
   "client": [
     "CreateWorldScreenWorldTabMixin"
   ],
