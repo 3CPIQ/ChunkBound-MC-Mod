@@ -51,10 +51,9 @@ public final class ClientEvents {
         if (scaleButton == null) {
             return;
         }
-        boolean worldTab = screen.children().stream()
-            .filter(EditBox.class::isInstance)
-            .map(EditBox.class::cast)
-            .anyMatch(box -> box.getY() > 120 && box.getWidth() > 250);
+        long editBoxes = screen.children().stream().filter(EditBox.class::isInstance).count();
+        long cycleButtons = screen.children().stream().filter(CycleButton.class::isInstance).count();
+        boolean worldTab = editBoxes == 1 && cycleButtons == 2;
         scaleButton.visible = worldTab;
         if (!worldTab) {
             return;
