@@ -3,8 +3,9 @@ package com.jxmann.chunkbound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.border.WorldBorder;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
@@ -26,15 +27,9 @@ public final class WorldEvents {
         }
 
         MinecraftServer server = level.getServer();
-        ScaleSelection selection = SELECTIONS.get(server);
 
         if (level.dimension() == Level.OVERWORLD) {
-            selection = ScaleSavedData.get(level).selection();
-            SELECTIONS.put(server, selection);
-        }
-
-        if (selection != null && selection.finite() && applies(level, selection)) {
-            configureBorder(level, selection);
+            SELECTIONS.put(server, ScaleSavedData.get(level).selection());
         }
     }
 
@@ -51,17 +46,15 @@ public final class WorldEvents {
             return;
         }
 
-        double minX = minChunk(selection.effectiveWidth()) * 16.0;
-        double maxX = (minChunk(selection.effectiveWidth()) + selection.effectiveWidth()) * 16.0;
-        double minZ = minChunk(selection.effectiveLength()) * 16.0;
-        double maxZ = (minChunk(selection.effectiveLength()) + selection.effectiveLength()) * 16.0;
-        double x = Math.max(minX + 0.3, Math.min(maxX - 0.3, player.getX()));
-        double z = Math.max(minZ + 0.3, Math.min(maxZ - 0.3, player.getZ()));
+        ChunkPos pos = player.chunkPosition();
 
-        if (x != player.getX() || z != player.getZ()) {
-            player.teleportTo(level, x, player.getY(), z, player.getYRot(), player.getXRot());
-            player.setDeltaMovement(0.0, player.getDeltaMovement().y, 0.0);
+        if (contains(pos, selection) || player.getY() > level.getMinBuildHeight() - 8) {
+            return;
         }
+
+        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
+        player.teleportTo(level, 0.5, Math.max(y + 1, level.getMinBuildHeight() + 2), 0.5, player.getYRot(), player.getXRot());
+        player.setDeltaMovement(0.0, 0.0, 0.0);
     }
 
     @SubscribeEvent
@@ -69,20 +62,21 @@ public final class WorldEvents {
         SELECTIONS.remove(event.getServer());
     }
 
+    public static boolean shouldBeVoid(ServerLevel level, ChunkPos pos) {
+        ScaleSelection selection = SELECTIONS.get(level.getServer());
+        return selection != null && selection.finite() && applies(level, selection) && !contains(pos, selection);
+    }
+
     private static boolean applies(ServerLevel level, ScaleSelection selection) {
         return level.dimension() == Level.OVERWORLD || selection.otherDimensions();
     }
 
-    private static void configureBorder(ServerLevel level, ScaleSelection selection) {
-        WorldBorder border = level.getWorldBorder();
-        double centerX = (minChunk(selection.effectiveWidth()) * 2.0 + selection.effectiveWidth()) * 8.0;
-        double centerZ = (minChunk(selection.effectiveLength()) * 2.0 + selection.effectiveLength()) * 8.0;
+    private static boolean contains(ChunkPos pos, ScaleSelection selection) {
+        int minX = minChunk(selection.effectiveWidth());
+        int minZ = minChunk(selection.effectiveLength());
 
-        border.setCenter(centerX, centerZ);
-        border.setSize(Math.max(selection.effectiveWidth(), selection.effectiveLength()) * 16.0);
-        border.setWarningBlocks(0);
-        border.setDamagePerBlock(1000.0);
-        border.setDamageSafeZone(0.0);
+        return pos.x >= minX && pos.x < minX + selection.effectiveWidth()
+            && pos.z >= minZ && pos.z < minZ + selection.effectiveLength();
     }
 
     private static int minChunk(int size) {
