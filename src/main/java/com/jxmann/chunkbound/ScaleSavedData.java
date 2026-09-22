@@ -1,7 +1,7 @@
 package com.jxmann.chunkbound;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
 public final class ScaleSavedData extends SavedData {
@@ -13,8 +13,8 @@ public final class ScaleSavedData extends SavedData {
         setDirty();
     }
 
-    public static ScaleSavedData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
+    public static ScaleSavedData get(ServerLevel level) {
+        return level.getDataStorage().computeIfAbsent(
             ScaleSavedData::load,
             () -> new ScaleSavedData(PendingScale.take()),
             FILE_NAME
@@ -23,14 +23,17 @@ public final class ScaleSavedData extends SavedData {
 
     public static ScaleSavedData load(CompoundTag tag) {
         ScaleMode mode;
+
         try {
             mode = ScaleMode.valueOf(tag.getString("mode"));
         } catch (IllegalArgumentException exception) {
             mode = ScaleMode.CLASSIC;
         }
+
         int width = Math.max(1, tag.getInt("width"));
         int length = Math.max(1, tag.getInt("length"));
         boolean otherDimensions = tag.getBoolean("otherDimensions");
+
         return new ScaleSavedData(new ScaleSelection(mode, width, length, otherDimensions));
     }
 
