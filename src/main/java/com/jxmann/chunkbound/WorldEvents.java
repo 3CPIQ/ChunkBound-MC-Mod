@@ -98,13 +98,30 @@ public final class WorldEvents {
             return;
         }
 
-        if (contains(player.chunkPosition(), selection) || player.getY() > level.getMinBuildHeight() - 8) {
+        double minX = minChunk(selection.effectiveWidth()) * 16.0;
+        double maxX = (minChunk(selection.effectiveWidth()) + selection.effectiveWidth()) * 16.0;
+        double minZ = minChunk(selection.effectiveLength()) * 16.0;
+        double maxZ = (minChunk(selection.effectiveLength()) + selection.effectiveLength()) * 16.0;
+        double margin = 0.31;
+
+        double x = Math.max(minX + margin, Math.min(maxX - margin, player.getX()));
+        double z = Math.max(minZ + margin, Math.min(maxZ - margin, player.getZ()));
+
+        boolean hitX = x != player.getX();
+        boolean hitZ = z != player.getZ();
+
+        if (!hitX && !hitZ) {
             return;
         }
 
-        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
-        player.teleportTo(level, 0.5, Math.max(y + 1, level.getMinBuildHeight() + 2), 0.5, player.getYRot(), player.getXRot());
-        player.setDeltaMovement(0.0, 0.0, 0.0);
+        player.teleportTo(level, x, player.getY(), z, player.getYRot(), player.getXRot());
+
+        var motion = player.getDeltaMovement();
+        player.setDeltaMovement(
+            hitX ? 0.0 : motion.x,
+            motion.y,
+            hitZ ? 0.0 : motion.z
+        );
     }
 
     @SubscribeEvent
