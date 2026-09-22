@@ -112,6 +112,11 @@ public final class WorldEvents {
         SELECTIONS.remove(event.getServer());
     }
 
+    public static boolean shouldBeVoid(ServerLevel level, ChunkPos pos) {
+        ScaleSelection selection = SELECTIONS.get(level.getServer());
+        return selection != null && selection.finite() && applies(level, selection) && !contains(pos, selection);
+    }
+
     private static boolean applies(ServerLevel level, ScaleSelection selection) {
         return level.dimension() == Level.OVERWORLD || selection.otherDimensions();
     }
